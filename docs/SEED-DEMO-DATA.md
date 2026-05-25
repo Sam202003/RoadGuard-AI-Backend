@@ -1,6 +1,6 @@
 # Demo users & providers seed
 
-Populates MongoDB with sample **customers**, **providers** (with full provider profiles), and one **admin**.
+Populates MongoDB with sample **customers**, **providers**, **vehicles**, **breakdown requests** (roadside assistance complaints), **notifications**, and one **admin**.
 
 ## Prerequisites
 
@@ -64,11 +64,43 @@ Providers are seeded as **AVAILABLE** / **ONLINE** (except Rohan: BUSY) with GPS
 
 ## MongoDB Compass
 
-Connect with the same `MONGODB_URI` → database `roadguard` → collections `users`, `providers`.
+Connect with the same `MONGODB_URI` → database `roadguard` → collections:
+
+| Collection | Demo content |
+|------------|----------------|
+| `users` | 4 customers + 5 providers + 1 admin |
+| `providers` | Full provider profiles (GPS, KYC verified) |
+| `vehicles` | 1 vehicle per customer (`DEMO-MH-*` plates) |
+| `breakdownrequests` | 20 requests (mixed statuses) |
+| `notifications` | 9 in-app notifications |
+
+### Provider job queue (login as provider → **Requests** or **Dashboard**)
+
+| Provider | Completed (done) | Active (in progress) |
+|----------|------------------|-------------------------|
+| `vikram.patil@roadguard.demo` | 3 | Flat tyre assigned, brake job in progress |
+| `sneha.kulkarni@roadguard.demo` | 2 | Engine tow on the way, engine assigned |
+| `arjun.singh@roadguard.demo` | 2 | Battery job on the way |
+| `meera.joshi@roadguard.demo` | 2 | Fuel assigned, brake inspection arrived |
+| `rohan.verma@roadguard.demo` | 1 | EV assist in progress, hybrid arrived |
+
+Filter by status **COMPLETED** on the Requests page to see finished jobs.
+
+### Sample customer requests
+
+| Customer | Issue | Status |
+|----------|--------|--------|
+| Priya | Flat tyre | COMPLETED |
+| Priya | Battery failure | ON_THE_WAY (live tracking) |
+| Rahul | Out of fuel | PROVIDER_ASSIGNED |
+| Rahul | Brake failure | ARRIVED |
+| Ananya | Engine failure | PROVIDER_ASSIGNED |
+| Ananya | EV battery low | IN_PROGRESS |
+| Karan | Accident | CANCELLED |
 
 ## Notes
 
 - Emails use domain `@roadguard.demo` so they are easy to spot and remove.
-- Script is **idempotent**: re-running skips accounts that already exist.
-- Use `--reset` to wipe all `@roadguard.demo` users and providers, then re-seed.
+- Script is **idempotent**: re-running skips records that already exist.
+- Use `--reset` to wipe all `@roadguard.demo` users, vehicles, requests, and notifications, then re-seed.
 - **Do not use these passwords in production.**
