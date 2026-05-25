@@ -1,0 +1,3 @@
+# @roadguard/database
+
+Shared package.

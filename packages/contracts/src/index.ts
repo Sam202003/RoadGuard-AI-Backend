@@ -1,0 +1,5 @@
+/**
+ * @roadguard/contracts
+ */
+
+export {};

@@ -1,0 +1,3 @@
+# @roadguard/contracts
+
+Shared package.

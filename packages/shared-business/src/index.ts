@@ -1,0 +1,5 @@
+/**
+ * @roadguard/shared-business
+ */
+
+export {};

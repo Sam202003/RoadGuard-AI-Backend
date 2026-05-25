@@ -1,0 +1,8 @@
+# MVP workspace — add more apps/packages as phases progress
+packages:
+  - 'apps/api'
+  - 'packages/config'
+  - 'packages/types'
+  - 'packages/database'
+  - 'packages/logger'
+  - 'packages/cache'

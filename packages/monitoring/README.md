@@ -1,0 +1,3 @@
+# @roadguard/monitoring
+
+Shared package.

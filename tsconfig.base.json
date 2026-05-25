@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@roadguard/config": ["packages/config/src/index.ts"],
+      "@roadguard/config/*": ["packages/config/src/*"],
+      "@roadguard/types": ["packages/types/src/index.ts"],
+      "@roadguard/types/*": ["packages/types/src/*"],
+      "@roadguard/database": ["packages/database/src/index.ts"],
+      "@roadguard/database/*": ["packages/database/src/*"],
+      "@roadguard/logger": ["packages/logger/src/index.ts"],
+      "@roadguard/logger/*": ["packages/logger/src/*"],
+      "@roadguard/cache": ["packages/cache/src/index.ts"],
+      "@roadguard/cache/*": ["packages/cache/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "coverage"]
+}

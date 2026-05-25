@@ -1,0 +1,14 @@
+# Road Guard — code ownership
+* @roadguard/platform-team
+
+/apps/api-gateway/       @roadguard/platform-team
+/apps/auth-service/      @roadguard/identity-team
+/apps/user-service/      @roadguard/identity-team
+/apps/provider-service/  @roadguard/provider-team
+/apps/breakdown-service/ @roadguard/dispatch-team
+/apps/tracking-service/  @roadguard/dispatch-team
+/apps/realtime-service/  @roadguard/dispatch-team
+/apps/ai-service/         @roadguard/ai-team
+/apps/payment-service/   @roadguard/payments-team
+/infrastructure/          @roadguard/devops-team
+/packages/                @roadguard/platform-team

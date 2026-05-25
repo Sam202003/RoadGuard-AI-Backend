@@ -1,0 +1,3 @@
+# @roadguard/events
+
+Shared package.

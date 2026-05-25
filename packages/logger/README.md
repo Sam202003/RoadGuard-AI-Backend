@@ -1,0 +1,3 @@
+# @roadguard/logger
+
+Shared package.

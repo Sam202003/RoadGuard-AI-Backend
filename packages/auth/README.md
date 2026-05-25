@@ -1,0 +1,3 @@
+# @roadguard/auth
+
+Shared package.

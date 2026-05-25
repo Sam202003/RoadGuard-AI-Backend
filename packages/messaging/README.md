@@ -1,0 +1,3 @@
+# @roadguard/messaging
+
+Shared package.

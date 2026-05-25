@@ -1,0 +1,3 @@
+# @roadguard/config
+
+Shared package.

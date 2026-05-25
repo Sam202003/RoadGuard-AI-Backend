@@ -1,0 +1,3 @@
+# @roadguard/validators
+
+Shared package.

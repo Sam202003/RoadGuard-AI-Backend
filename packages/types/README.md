@@ -1,0 +1,3 @@
+# @roadguard/types
+
+Shared package.

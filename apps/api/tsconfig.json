@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": false,
+    "paths": {
+      "@roadguard/config": ["../../packages/config/src/index.ts"],
+      "@roadguard/config/*": ["../../packages/config/src/*"],
+      "@roadguard/types": ["../../packages/types/src/index.ts"],
+      "@roadguard/types/*": ["../../packages/types/src/*"],
+      "@roadguard/database": ["../../packages/database/src/index.ts"],
+      "@roadguard/database/*": ["../../packages/database/src/*"],
+      "@roadguard/logger": ["../../packages/logger/src/index.ts"],
+      "@roadguard/logger/*": ["../../packages/logger/src/*"],
+      "@roadguard/cache": ["../../packages/cache/src/index.ts"],
+      "@roadguard/cache/*": ["../../packages/cache/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,48 @@
+# Render Blueprint — Road Guard API
+# Dashboard: New → Blueprint → connect repo, or create Web Service manually.
+# Docs: docs/DEPLOY-RENDER-VERCEL.md
+
+services:
+  - type: web
+    name: roadguard-api
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: corepack enable && corepack prepare pnpm@9.15.0 --activate && pnpm install && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: '20'
+      - key: PNPM_VERSION
+        value: '9.15.0'
+      - key: APP_NAME
+        value: roadguard-api
+      - key: API_PREFIX
+        value: /api
+      - key: API_VERSION
+        value: v1
+      - key: LOG_LEVEL
+        value: info
+      - key: TRUST_PROXY
+        value: 'true'
+      - key: REDIS_ENABLED
+        value: 'false'
+      - key: SOCKET_ENABLED
+        value: 'true'
+      - key: SOCKET_PATH
+        value: /socket.io
+      - key: SOCKET_REDIS_ADAPTER
+        value: 'false'
+      - key: MONGODB_DB_NAME
+        value: roadguard
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false

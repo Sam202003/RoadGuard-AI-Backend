@@ -1,0 +1,44 @@
+# Fly.io — Road Guard API (REST + Socket.IO)
+# See docs/DEPLOY-VERCEL-FLY.md
+
+app = 'roadguard-api'
+primary_region = 'bom'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  NODE_ENV = 'production'
+  PORT = '3000'
+  API_PREFIX = '/api'
+  API_VERSION = 'v1'
+  SOCKET_ENABLED = 'true'
+  SOCKET_PATH = '/socket.io'
+  SOCKET_REDIS_ADAPTER = 'false'
+  TRUST_PROXY = 'true'
+  LOG_LEVEL = 'info'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+  [http_service.concurrency]
+    type = 'connections'
+    hard_limit = 250
+    soft_limit = 200
+
+  [[http_service.checks]]
+    interval = '15s'
+    timeout = '5s'
+    grace_period = '20s'
+    method = 'GET'
+    path = '/api/v1/health'
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
