@@ -8,7 +8,8 @@ services:
     runtime: node
     plan: starter
     region: singapore
-    buildCommand: corepack enable && corepack prepare pnpm@9.15.0 --activate && pnpm install && pnpm build
+    # Install devDependencies too (turbo, typescript) — NODE_ENV=production skips them otherwise
+    buildCommand: corepack enable && corepack prepare pnpm@9.15.0 --activate && pnpm install --prod=false && pnpm build
     startCommand: pnpm start
     healthCheckPath: /api/v1/health
     envVars:

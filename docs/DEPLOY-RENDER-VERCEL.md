@@ -29,7 +29,7 @@ For **10–15 users**: Starter web service on Render (~$7/mo, no sleep) + Vercel
 |---------|--------|
 | **Environment** | Node |
 | **Root directory** | `.` (repo root) |
-| **Build command** | `corepack enable && corepack prepare pnpm@9.15.0 --activate && pnpm install && pnpm build` |
+| **Build command** | `corepack enable && corepack prepare pnpm@9.15.0 --activate && pnpm install --prod=false && pnpm build` |
 | **Start command** | `pnpm start` |
 | **Health check path** | `/api/v1/health` |
 | **Plan** | **Starter** (recommended — no sleep; WebSockets stay reliable) |
