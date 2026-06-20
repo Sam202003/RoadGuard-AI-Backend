@@ -3,6 +3,8 @@ import { getLogger } from '../logger/index.js';
 import { initLogger } from '../logger/index.js';
 import { connectMongoFromEnv, disconnectMongo } from '../database/index.js';
 import { connectRedisFromEnv, disconnectRedis } from '../redis/index.js';
+import { initAdminModule } from '../modules/admin/index.js';
+import { initAiModule } from '../modules/ai/index.js';
 import { initAuthModule } from '../modules/auth/index.js';
 import { initBreakdownRequestsModule } from '../modules/breakdown-requests/index.js';
 import { initNotificationsModule } from '../modules/notifications/index.js';
@@ -26,11 +28,13 @@ export async function connectInfrastructure(env: Env): Promise<void> {
   }
 
   initAuthModule(env);
+  initAiModule(env);
   initVehiclesModule();
-  initProvidersModule();
+  initProvidersModule(env);
   initNotificationsModule();
   initBreakdownRequestsModule();
-  logger.info('Auth, users, vehicles, providers, notifications & breakdown-requests modules initialized');
+  initAdminModule();
+  logger.info('Auth, AI, users, vehicles, providers, notifications, breakdown-requests & admin modules initialized');
 }
 
 export async function disconnectInfrastructure(): Promise<void> {

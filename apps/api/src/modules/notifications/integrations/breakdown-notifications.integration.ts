@@ -191,18 +191,20 @@ export class BreakdownNotificationsIntegration {
       .lean()
       .exec();
 
-    for (const admin of admins) {
-      const notification = await this.notificationService.send({
-        userId: admin._id.toString(),
-        title: 'Emergency alert',
-        message,
-        type: NotificationType.EMERGENCY_ALERT,
-        metadata: this.baseMetadata(request),
-        priority: NotificationPriority.EMERGENCY,
-        channels: [NotificationChannel.IN_APP],
-      });
+    await Promise.allSettled(
+      admins.map(async (admin) => {
+        const notification = await this.notificationService.send({
+          userId: admin._id.toString(),
+          title: 'Emergency alert',
+          message,
+          type: NotificationType.EMERGENCY_ALERT,
+          metadata: this.baseMetadata(request),
+          priority: NotificationPriority.EMERGENCY,
+          channels: [NotificationChannel.IN_APP],
+        });
 
-      this.notificationService.emitAdminAlert(notification);
-    }
+        this.notificationService.emitAdminAlert(notification);
+      }),
+    );
   }
 }

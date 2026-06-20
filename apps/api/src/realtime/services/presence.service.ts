@@ -106,8 +106,6 @@ export class PresenceService {
 
     if (user.role === UserRole.PROVIDER && user.providerId) {
       socket.join(RoomNames.provider(user.providerId));
-      this.store.setProviderOnline(user.providerId, true);
-      this.broadcastProviderOnlineStatus(user.providerId, user.id, true);
     }
 
     if (user.role === UserRole.ADMIN) {

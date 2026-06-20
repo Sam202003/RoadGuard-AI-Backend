@@ -21,6 +21,9 @@ export const registerSchema = z.object({
     .refine((role) => role !== UserRole.ADMIN, {
       message: 'ADMIN role cannot be assigned via registration',
     })
+    .refine((role) => role === UserRole.CUSTOMER || role === UserRole.PROVIDER, {
+      message: 'Invalid registration role',
+    })
     .default(UserRole.CUSTOMER),
 });
 

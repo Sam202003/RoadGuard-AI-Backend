@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import type { Env } from '@roadguard/config';
 import type { ApiConfig } from '../config/index.js';
 import { requestLoggerMiddleware } from '../logger/middleware/request-logger.middleware.js';
+import { globalRateLimiter } from './rate-limit.middleware.js';
 import { requestIdMiddleware } from './request-id.middleware.js';
 
 export function registerMiddlewares(app: Application, _env: Env, apiConfig: ApiConfig): void {
@@ -15,7 +16,12 @@ export function registerMiddlewares(app: Application, _env: Env, apiConfig: ApiC
 
   app.use(requestIdMiddleware);
   app.use(requestLoggerMiddleware());
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+    }),
+  );
+  app.use(globalRateLimiter);
   app.use(
     cors({
       origin: apiConfig.corsOrigin,

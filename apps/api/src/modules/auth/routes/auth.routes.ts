@@ -1,6 +1,7 @@
 import { Router, type IRouter } from 'express';
 import { asyncHandler } from '../../../utils/async-handler.js';
 import { authenticate } from '../../../middlewares/auth.middleware.js';
+import { authRateLimiter } from '../../../middlewares/rate-limit.middleware.js';
 import { validate } from '../../../middlewares/validate.middleware.js';
 import {
   loginSchema,
@@ -19,10 +20,11 @@ import {
 
 export const authRouter: IRouter = Router();
 
-authRouter.post('/register', validate({ body: registerSchema }), asyncHandler(register));
-authRouter.post('/login', validate({ body: loginSchema }), asyncHandler(login));
+authRouter.post('/register', authRateLimiter, validate({ body: registerSchema }), asyncHandler(register));
+authRouter.post('/login', authRateLimiter, validate({ body: loginSchema }), asyncHandler(login));
 authRouter.post(
   '/refresh-token',
+  authRateLimiter,
   validate({ body: refreshTokenSchema }),
   asyncHandler(refreshToken),
 );

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { config as loadDotenv } from 'dotenv';
 import { envSchema, type Env } from './env.schema.js';
+import { assertProductionEnv } from './production-guards.js';
 
 let cached: Env | null = null;
 
@@ -31,8 +32,14 @@ export function loadEnv(options?: { envPath?: string }): Env {
     throw new Error(`Invalid environment configuration: ${JSON.stringify(message)}`);
   }
 
-  cached = parsed.data;
-  return parsed.data;
+  const env = parsed.data;
+
+  if (env.NODE_ENV === 'production') {
+    assertProductionEnv(env);
+  }
+
+  cached = env;
+  return env;
 }
 
 export function resetEnvCache(): void {

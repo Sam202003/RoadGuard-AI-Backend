@@ -1,3 +1,4 @@
+import type { Env } from '@roadguard/config';
 import { Types } from 'mongoose';
 import { AppError } from '../../../errors/index.js';
 import { HTTP_STATUS } from '../../../constants/index.js';
@@ -6,6 +7,12 @@ import {
   KycStatus,
   OnlineStatus,
 } from '../constants/provider.enums.js';
+import {
+  bankDetailsNeedsEncryption,
+  decryptBankDetails,
+  encryptBankDetails,
+} from '../utils/bank-details.util.js';
+import { assertKycVerified } from '../utils/kyc.util.js';
 import type {
   NearbySearchInput,
   OnboardProviderInput,
@@ -13,12 +20,32 @@ import type {
   UpdateLocationInput,
   UpdateProviderInput,
 } from '../dto/provider.dto.js';
-import type { NearbyProviderResult, SafeProvider } from '../interfaces/provider.interface.js';
+import type {
+  NearbyProviderResult,
+  ProviderMongoDocument,
+  SafeProvider,
+} from '../interfaces/provider.interface.js';
 import { ProviderRepository } from '../repositories/provider.repository.js';
-import { toNearbyProvider, toSafeProvider } from '../utils/provider.mapper.js';
+import { toPublicNearbyProvider, toSafeProvider } from '../utils/provider.mapper.js';
+import type { PublicNearbyProvider } from '../interfaces/provider.interface.js';
 
 export class ProviderService {
-  constructor(private readonly providerRepository: ProviderRepository) {}
+  constructor(
+    private readonly providerRepository: ProviderRepository,
+    private readonly env: Env,
+  ) {}
+
+  private get encryptionKey(): string | undefined {
+    return this.env.FIELD_ENCRYPTION_KEY;
+  }
+
+  private withDecryptedBankDetails(provider: ProviderMongoDocument): ProviderMongoDocument {
+    provider.bankDetails = decryptBankDetails(
+      provider.bankDetails as Parameters<typeof decryptBankDetails>[0],
+      this.encryptionKey,
+    );
+    return provider;
+  }
 
   private async getByUserIdOrThrow(userId: string) {
     const provider = await this.providerRepository.findByUserId(userId);
@@ -55,15 +82,15 @@ export class ProviderService {
       totalCompletedRequests: 0,
       vehicleDetails: input.vehicleDetails ?? null,
       documents: input.documents ?? [],
-      bankDetails: input.bankDetails ?? null,
+      bankDetails: encryptBankDetails(input.bankDetails ?? null, this.encryptionKey),
     });
 
-    return toSafeProvider(provider);
+    return toSafeProvider(this.withDecryptedBankDetails(provider));
   }
 
   async getMyProfile(userId: string): Promise<SafeProvider> {
     const provider = await this.getByUserIdOrThrow(userId);
-    return toSafeProvider(provider);
+    return toSafeProvider(this.withDecryptedBankDetails(provider));
   }
 
   async updateMyProfile(userId: string, input: UpdateProviderInput): Promise<SafeProvider> {
@@ -82,11 +109,13 @@ export class ProviderService {
     if (input.serviceRadius !== undefined) provider.serviceRadius = input.serviceRadius;
     if (input.vehicleDetails !== undefined) provider.vehicleDetails = input.vehicleDetails;
     if (input.documents !== undefined) provider.documents = input.documents;
-    if (input.bankDetails !== undefined) provider.bankDetails = input.bankDetails;
+    if (input.bankDetails !== undefined) {
+      provider.bankDetails = encryptBankDetails(input.bankDetails, this.encryptionKey);
+    }
 
     await provider.save();
 
-    return toSafeProvider(provider);
+    return toSafeProvider(this.withDecryptedBankDetails(provider));
   }
 
   async updateAvailability(
@@ -95,11 +124,30 @@ export class ProviderService {
   ): Promise<SafeProvider> {
     const provider = await this.getByUserIdOrThrow(userId);
 
+    const goingOnline =
+      input.onlineStatus === OnlineStatus.ONLINE ||
+      (input.availabilityStatus !== undefined &&
+        input.availabilityStatus !== AvailabilityStatus.OFFLINE &&
+        provider.onlineStatus === OnlineStatus.ONLINE);
+
+    if (goingOnline) {
+      assertKycVerified(provider);
+    }
+
     if (input.availabilityStatus !== undefined) {
+      if (
+        input.availabilityStatus !== AvailabilityStatus.OFFLINE &&
+        provider.onlineStatus === OnlineStatus.ONLINE
+      ) {
+        assertKycVerified(provider);
+      }
       provider.availabilityStatus = input.availabilityStatus;
     }
 
     if (input.onlineStatus !== undefined) {
+      if (input.onlineStatus === OnlineStatus.ONLINE) {
+        assertKycVerified(provider);
+      }
       provider.onlineStatus = input.onlineStatus;
     }
 
@@ -109,11 +157,15 @@ export class ProviderService {
 
     await provider.save();
 
-    return toSafeProvider(provider);
+    return toSafeProvider(this.withDecryptedBankDetails(provider));
   }
 
   async updateLocation(userId: string, input: UpdateLocationInput): Promise<SafeProvider> {
     const provider = await this.getByUserIdOrThrow(userId);
+
+    if (provider.onlineStatus === OnlineStatus.ONLINE) {
+      assertKycVerified(provider);
+    }
 
     provider.currentLocation = input.currentLocation;
 
@@ -123,10 +175,50 @@ export class ProviderService {
 
     await provider.save();
 
-    return toSafeProvider(provider);
+    return toSafeProvider(this.withDecryptedBankDetails(provider));
   }
 
-  async findNearbyProviders(query: NearbySearchInput): Promise<NearbyProviderResult[]> {
+  async updateKycStatus(
+    providerId: string,
+    kycStatus: KycStatus,
+  ): Promise<SafeProvider> {
+    const provider = await this.providerRepository.findById(providerId);
+
+    if (!provider) {
+      throw AppError.notFound('Provider not found');
+    }
+
+    provider.kycStatus = kycStatus;
+
+    if (kycStatus !== KycStatus.VERIFIED) {
+      provider.onlineStatus = OnlineStatus.OFFLINE;
+      provider.availabilityStatus = AvailabilityStatus.OFFLINE;
+    }
+
+    await provider.save();
+
+    return toSafeProvider(this.withDecryptedBankDetails(provider));
+  }
+
+  async migratePlaintextBankDetails(): Promise<{ updated: number }> {
+    if (!this.encryptionKey) {
+      throw new AppError('FIELD_ENCRYPTION_KEY is not configured', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+    }
+
+    const providers = await this.providerRepository.findAllWithBankDetails();
+    let updated = 0;
+
+    for (const provider of providers) {
+      if (!bankDetailsNeedsEncryption(provider.bankDetails)) continue;
+      provider.bankDetails = encryptBankDetails(provider.bankDetails, this.encryptionKey);
+      await provider.save();
+      updated += 1;
+    }
+
+    return { updated };
+  }
+
+  async findNearbyProviders(query: NearbySearchInput): Promise<PublicNearbyProvider[]> {
     const results = await this.providerRepository.findNearbyWithDistance({
       longitude: query.longitude,
       latitude: query.latitude,
@@ -138,6 +230,6 @@ export class ProviderService {
       limit: query.limit ?? 20,
     });
 
-    return results.map(({ provider, distanceKm }) => toNearbyProvider(provider, distanceKm));
+    return results.map(({ provider, distanceKm }) => toPublicNearbyProvider(provider, distanceKm));
   }
 }

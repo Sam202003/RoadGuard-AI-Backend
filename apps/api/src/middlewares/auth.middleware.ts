@@ -3,8 +3,13 @@ import type { Env } from '@roadguard/config';
 import { AppError } from '../errors/index.js';
 import { verifyAccessToken } from '../modules/auth/utils/token.util.js';
 import type { AuthenticatedUser } from '../modules/auth/interfaces/auth.interface.js';
+import { resolveActiveUser } from './user-status-cache.js';
 
-export function authenticate(req: Request, _res: Response, next: NextFunction): void {
+export async function authenticate(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): Promise<void> {
   try {
     const header = req.headers.authorization;
 
@@ -26,10 +31,16 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
 
     const payload = verifyAccessToken(env, token);
 
+    const resolved = await resolveActiveUser(payload.sub, payload.email, payload.role);
+
+    if (!resolved.isActive) {
+      throw AppError.unauthorized('Account is deactivated');
+    }
+
     const user: AuthenticatedUser = {
-      id: payload.sub,
-      email: payload.email,
-      role: payload.role,
+      id: resolved.id,
+      email: resolved.email,
+      role: resolved.role,
     };
 
     req.user = user;

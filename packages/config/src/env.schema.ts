@@ -47,6 +47,12 @@ export const envSchema = z.object({
   SOCKET_MAX_EVENTS_PER_WINDOW: z.coerce.number().int().positive().default(50),
   SOCKET_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(10_000),
   SOCKET_HEARTBEAT_TIMEOUT_MS: z.coerce.number().int().positive().default(90_000),
+
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_MODEL: z.string().default('gpt-4o-mini'),
+
+  /** Base64-encoded 32-byte key for AES-256-GCM field encryption (bank details). */
+  FIELD_ENCRYPTION_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

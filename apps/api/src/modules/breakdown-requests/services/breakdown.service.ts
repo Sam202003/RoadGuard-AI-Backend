@@ -6,6 +6,7 @@ import {
   AvailabilityStatus,
   OnlineStatus,
 } from '../../providers/constants/provider.enums.js';
+import { assertKycVerified } from '../../providers/utils/kyc.util.js';
 import type { ProviderMongoDocument } from '../../providers/interfaces/provider.interface.js';
 import { getProviderRepository } from '../../providers/index.js';
 import { getVehicleService } from '../../vehicles/index.js';
@@ -24,6 +25,10 @@ import type {
 import type { SafeBreakdownRequest } from '../interfaces/breakdown.interface.js';
 import { BreakdownRequestRepository } from '../repositories/breakdown.repository.js';
 import { toSafeBreakdownRequest } from '../utils/breakdown.mapper.js';
+import {
+  enrichBreakdownRequestWithDetails,
+  enrichBreakdownRequestsWithDetails,
+} from '../utils/breakdown-enrichment.util.js';
 import { estimateArrivalMinutes } from '../utils/estimate-arrival.js';
 import { getPreferredProviderTypes } from '../utils/issue-provider-map.js';
 import { canTransition, isTerminalStatus } from '../utils/status-transitions.js';
@@ -128,6 +133,7 @@ export class BreakdownRequestService {
         providerType,
         availabilityStatus: AvailabilityStatus.AVAILABLE,
         onlineOnly: true,
+        kycVerifiedOnly: true,
       });
 
       for (const row of results) {
@@ -156,6 +162,8 @@ export class BreakdownRequestService {
     if (provider.onlineStatus !== OnlineStatus.ONLINE) {
       throw new AppError('Provider must be online for assignment', HTTP_STATUS.CONFLICT);
     }
+
+    assertKycVerified(provider);
 
     const [lon, lat] = request.location.coordinates;
     const providerCoords = provider.currentLocation?.coordinates;
@@ -273,8 +281,17 @@ export class BreakdownRequestService {
       throw AppError.forbidden();
     }
 
+    const requests = result.data.map(toSafeBreakdownRequest);
+
+    if (user.role === UserRole.PROVIDER || user.role === UserRole.ADMIN) {
+      return {
+        requests: await enrichBreakdownRequestsWithDetails(requests),
+        meta: result.meta as unknown as Record<string, unknown>,
+      };
+    }
+
     return {
-      requests: result.data.map(toSafeBreakdownRequest),
+      requests,
       meta: result.meta as unknown as Record<string, unknown>,
     };
   }
@@ -282,7 +299,13 @@ export class BreakdownRequestService {
   async getRequestById(user: AuthUser, id: string): Promise<SafeBreakdownRequest> {
     const request = await this.getRequestOrThrow(id);
     await this.assertCanView(user, request);
-    return toSafeBreakdownRequest(request);
+    const safe = toSafeBreakdownRequest(request);
+
+    if (user.role === UserRole.PROVIDER || user.role === UserRole.ADMIN) {
+      return enrichBreakdownRequestWithDetails(safe);
+    }
+
+    return safe;
   }
 
   async updateStatus(

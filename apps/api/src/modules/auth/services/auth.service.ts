@@ -211,7 +211,7 @@ export class AuthService {
 
   async logout(userId: string, refreshToken?: string): Promise<void> {
     if (!refreshToken) {
-      throw AppError.badRequest('refreshToken is required to logout session');
+      return;
     }
 
     await this.revokeRefreshToken(userId, refreshToken);

@@ -16,6 +16,13 @@ export function getVehicleService(): VehicleService {
   return vehicleService;
 }
 
+export function getVehicleRepository(): VehicleRepository {
+  if (!vehicleRepository) {
+    throw new Error('Vehicles module not initialized');
+  }
+  return vehicleRepository;
+}
+
 export { vehicleRouter } from './routes/vehicle.routes.js';
 export {
   VehicleType,

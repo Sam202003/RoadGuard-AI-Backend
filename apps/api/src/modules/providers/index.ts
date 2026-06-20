@@ -1,12 +1,13 @@
+import type { Env } from '@roadguard/config';
 import { ProviderRepository } from './repositories/provider.repository.js';
 import { ProviderService } from './services/provider.service.js';
 
 let providerRepository: ProviderRepository | null = null;
 let providerService: ProviderService | null = null;
 
-export function initProvidersModule(): void {
+export function initProvidersModule(env: Env): void {
   providerRepository = new ProviderRepository();
-  providerService = new ProviderService(providerRepository);
+  providerService = new ProviderService(providerRepository, env);
 }
 
 export function getProviderService(): ProviderService {

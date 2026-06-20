@@ -4,6 +4,8 @@ import { UserRole } from '@roadguard/types';
 import { ClientEvents, ServerEvents } from '../events/event.constants.js';
 import type { SocketRateLimiter } from '../middleware/rate-limit.middleware.js';
 import { emitSocketError } from '../middleware/socket-error.util.js';
+import { getProviderRepository } from '../../../modules/providers/index.js';
+import { assertKycVerified } from '../../../modules/providers/utils/kyc.util.js';
 import type { PresenceService } from '../../services/presence.service.js';
 import type { RequestRoomService } from '../../services/request-room.service.js';
 import type { TrackingService } from '../../services/tracking.service.js';
@@ -110,7 +112,7 @@ export function registerSocketHandlers(
     await trackingService.handleLocationUpdate(socket, parsed.data);
   });
 
-  socket.on(ClientEvents.PROVIDER_ONLINE, (raw: unknown) => {
+  socket.on(ClientEvents.PROVIDER_ONLINE, async (raw: unknown) => {
     if (!rateLimiter.check(socket)) return;
 
     if (socket.data.user.role !== UserRole.PROVIDER || !socket.data.user.providerId) {
@@ -127,6 +129,23 @@ export function registerSocketHandlers(
     const providerId = parsed.data.providerId ?? socket.data.user.providerId;
     if (providerId !== socket.data.user.providerId) {
       emitSocketError(socket, 'FORBIDDEN', 'Cannot change another provider status');
+      return;
+    }
+
+    const provider = await getProviderRepository().findById(providerId);
+    if (!provider) {
+      emitSocketError(socket, 'NOT_FOUND', 'Provider profile not found');
+      return;
+    }
+
+    try {
+      assertKycVerified(provider);
+    } catch {
+      emitSocketError(
+        socket,
+        'FORBIDDEN',
+        'Provider KYC must be verified before going online',
+      );
       return;
     }
 

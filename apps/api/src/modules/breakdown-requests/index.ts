@@ -16,6 +16,13 @@ export function getBreakdownRequestService(): BreakdownRequestService {
   return breakdownService;
 }
 
+export function getBreakdownRequestRepository(): BreakdownRequestRepository {
+  if (!breakdownRepository) {
+    throw new Error('Breakdown requests module not initialized');
+  }
+  return breakdownRepository;
+}
+
 export { breakdownRequestRouter } from './routes/breakdown.routes.js';
 export {
   IssueType,

@@ -3,6 +3,13 @@
 # Docs: docs/DEPLOY-RENDER-VERCEL.md
 
 services:
+  - type: redis
+    name: roadguard-redis
+    plan: starter
+    region: singapore
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
   - type: web
     name: roadguard-api
     runtime: node
@@ -30,13 +37,18 @@ services:
       - key: TRUST_PROXY
         value: 'true'
       - key: REDIS_ENABLED
-        value: 'false'
+        value: 'true'
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: roadguard-redis
+          property: connectionString
       - key: SOCKET_ENABLED
         value: 'true'
       - key: SOCKET_PATH
         value: /socket.io
       - key: SOCKET_REDIS_ADAPTER
-        value: 'false'
+        value: 'true'
       - key: MONGODB_DB_NAME
         value: roadguard
       - key: MONGODB_URI
@@ -45,5 +57,7 @@ services:
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
+      - key: FIELD_ENCRYPTION_KEY
+        sync: false
       - key: CORS_ORIGIN
         sync: false

@@ -88,3 +88,20 @@ export interface SafeProvider {
 export interface NearbyProviderResult extends SafeProvider {
   distanceKm?: number;
 }
+
+/** Public fields only — no PII/financial data for customer nearby search. */
+export interface PublicNearbyProvider {
+  id: string;
+  businessName: string;
+  providerType: ProviderType;
+  servicesOffered: string[];
+  profileImage?: string | null;
+  currentLocation?: GeoPoint | null;
+  serviceRadius: number;
+  availabilityStatus: AvailabilityStatus;
+  onlineStatus: OnlineStatus;
+  kycStatus: KycStatus;
+  ratings: ProviderRatings;
+  totalCompletedRequests: number;
+  distanceKm?: number;
+}

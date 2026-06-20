@@ -19,8 +19,11 @@ For **10–15 users**: Starter web service on Render (~$7/mo, no sleep) + Vercel
 
 1. Push `RoadGuard-AI-Backend` to GitHub  
 2. [dashboard.render.com](https://dashboard.render.com) → **New** → **Blueprint**  
-3. Connect repo → Render reads `render.yaml`  
-4. Set **`MONGODB_URI`** and **`CORS_ORIGIN`** when prompted (`CORS_ORIGIN` = Vercel URL after step 3, or `*` for first test)  
+3. Connect repo → Render reads `render.yaml` (includes **Redis** + API web service)  
+4. Set when prompted:
+   - **`MONGODB_URI`**
+   - **`CORS_ORIGIN`** — your Vercel URL, e.g. `https://your-app.vercel.app` (**required**, no wildcard in production)
+   - **`FIELD_ENCRYPTION_KEY`** — `openssl rand -base64 32`
 5. Deploy  
 
 ### Option B — Manual Web Service
@@ -34,6 +37,8 @@ For **10–15 users**: Starter web service on Render (~$7/mo, no sleep) + Vercel
 | **Health check path** | `/api/v1/health` |
 | **Plan** | **Starter** (recommended — no sleep; WebSockets stay reliable) |
 
+Add a **Redis** instance (Starter) in the same region and link `REDIS_URL`.
+
 ### Environment variables (Render → Environment)
 
 | Key | Value |
@@ -43,10 +48,13 @@ For **10–15 users**: Starter web service on Render (~$7/mo, no sleep) + Vercel
 | `TRUST_PROXY` | `true` |
 | `MONGODB_URI` | Atlas connection string |
 | `MONGODB_DB_NAME` | `roadguard` |
-| `REDIS_ENABLED` | `false` |
+| `REDIS_ENABLED` | `true` |
+| `REDIS_URL` | Redis connection string from Render Redis |
+| `SOCKET_REDIS_ADAPTER` | `true` |
 | `JWT_ACCESS_SECRET` | long random string (16+ chars) |
 | `JWT_REFRESH_SECRET` | different long random string |
-| `CORS_ORIGIN` | `https://your-app.vercel.app` |
+| `FIELD_ENCRYPTION_KEY` | `openssl rand -base64 32` |
+| `CORS_ORIGIN` | `https://your-app.vercel.app` (comma-separated for multiple origins) |
 | `SOCKET_ENABLED` | `true` |
 | `SOCKET_PATH` | `/socket.io` |
 
@@ -57,6 +65,16 @@ After deploy, note URL: **`https://roadguard-api.onrender.com`** (yours may diff
 ```bash
 curl https://YOUR-SERVICE.onrender.com/api/v1/health
 ```
+
+Expect `data.infrastructure.redis.connected: true` when Redis is configured.
+
+### Post-deploy: encrypt existing bank details (if any)
+
+```bash
+FIELD_ENCRYPTION_KEY=<same-as-render> pnpm --filter @roadguard/api migrate:encrypt-bank
+```
+
+See [MIGRATION-P1-SECURITY.md](./MIGRATION-P1-SECURITY.md) for full migration notes.
 
 ---
 
@@ -71,6 +89,7 @@ curl https://YOUR-SERVICE.onrender.com/api/v1/health
 | `NEXT_PUBLIC_API_BASE_URL` | `https://YOUR-SERVICE.onrender.com/api/v1` |
 | `NEXT_PUBLIC_SOCKET_URL` | `https://YOUR-SERVICE.onrender.com` |
 | `NEXT_PUBLIC_SOCKET_PATH` | `/socket.io` |
+| `RG_SESSION_SECRET` | `openssl rand -base64 32` (32+ chars, server-only) |
 
 4. Deploy → copy URL `https://xxx.vercel.app`
 
@@ -90,12 +109,14 @@ Redeploy if needed. Test register/login from Vercel.
 
 ## 5. Pilot checklist (10–15 users)
 
-- [ ] Health URL returns `"success": true`  
+- [ ] Health URL returns `"success": true` and Redis connected  
 - [ ] Register customer + provider on Vercel  
+- [ ] Admin approves provider KYC before provider goes online  
 - [ ] Provider onboard: `POST /api/v1/providers` with Bearer token (until UI exists)  
 - [ ] Customer: vehicle → breakdown → provider assigned → live map  
 - [ ] Provider: job detail → **Start tracking** (allow location)  
 - [ ] DevTools → WS to `wss://YOUR-SERVICE.onrender.com/socket.io`  
+- [ ] Session cookie `rg-session` is HttpOnly (Application → Cookies)
 
 ---
 
@@ -103,10 +124,11 @@ Redeploy if needed. Test register/login from Vercel.
 
 | Service | ~/month |
 |---------|---------|
-| Render Starter | ~$7 |
+| Render Starter (API) | ~$7 |
+| Render Starter (Redis) | ~$10 |
 | Vercel Hobby | $0 |
 | Atlas M0 | $0 |
-| **Total** | **~$7** |
+| **Total** | **~$17** |
 
 Free Render tier works but **sleeps** when idle — first visit slow; not ideal for live tracking demos.
 

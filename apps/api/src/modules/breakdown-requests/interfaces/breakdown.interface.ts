@@ -62,4 +62,6 @@ export interface SafeBreakdownRequest {
   trackingEnabled: boolean;
   createdAt: Date;
   updatedAt: Date;
+  customerName?: string | null;
+  vehicleLabel?: string | null;
 }

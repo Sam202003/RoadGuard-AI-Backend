@@ -1,6 +1,7 @@
 import express, { type Application } from 'express';
 import type { Env } from '@roadguard/config';
 import { createApiConfig } from './config/index.js';
+import { registerSwaggerDocs } from './docs/register-swagger.js';
 import {
   attachLocalsMiddleware,
   errorHandler,
@@ -23,6 +24,7 @@ export function createApp(env: Env): Application {
 
   app.use(attachLocalsMiddleware(app));
   registerMiddlewares(app, env, apiConfig);
+  registerSwaggerDocs(app);
   registerRoutes(app, apiConfig);
 
   app.use(notFoundHandler);

@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { BaseRepository } from '@roadguard/database';
+import { BaseRepository, type PaginatedResult, type PaginationParams } from '@roadguard/database';
 import { ProviderModel } from '../schemas/provider.schema.js';
 import {
   AvailabilityStatus,
@@ -28,6 +28,10 @@ export class ProviderRepository extends BaseRepository<ProviderMongoDocument> {
 
   findByUserId(userId: string): Promise<ProviderMongoDocument | null> {
     return this.model.findOne({ userId: new Types.ObjectId(userId) }).exec();
+  }
+
+  findAllWithBankDetails(): Promise<ProviderMongoDocument[]> {
+    return this.model.find({ bankDetails: { $ne: null } }).exec();
   }
 
   async findNearbyWithDistance(
@@ -87,6 +91,32 @@ export class ProviderRepository extends BaseRepository<ProviderMongoDocument> {
       }
 
       return { provider, distanceKm: Math.round(distanceKm * 100) / 100 };
+    });
+  }
+
+  findPaginatedAdmin(
+    params: PaginationParams & {
+      availabilityStatus?: AvailabilityStatus;
+      onlineStatus?: OnlineStatus;
+    } = {},
+  ): Promise<PaginatedResult<ProviderMongoDocument>> {
+    const baseFilter: Record<string, unknown> = {};
+
+    if (params.availabilityStatus) {
+      baseFilter.availabilityStatus = params.availabilityStatus;
+    }
+
+    if (params.onlineStatus) {
+      baseFilter.onlineStatus = params.onlineStatus;
+    }
+
+    return this.findPaginated({
+      page: params.page,
+      limit: params.limit,
+      sort: params.sort,
+      search: params.search,
+      baseFilter,
+      searchFields: ['businessName', 'email', 'phoneNumber'],
     });
   }
 }

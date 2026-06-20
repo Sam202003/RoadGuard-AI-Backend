@@ -15,6 +15,9 @@ import type { ProviderLocationUpdatePayload } from '../validators/socket.validat
 import type { SocketData } from 'socket.io';
 import type { Socket } from 'socket.io';
 
+const LOCATION_SAVE_INTERVAL_MS = 30_000;
+const lastProviderLocationSave = new Map<string, number>();
+
 export class TrackingService {
   constructor(private readonly io: Server) {}
 
@@ -85,8 +88,14 @@ export class TrackingService {
 
     const provider = await getProviderRepository().findById(data.user.providerId);
     if (provider) {
-      provider.currentLocation = payload.location;
-      await provider.save();
+      const now = Date.now();
+      const lastSave = lastProviderLocationSave.get(data.user.providerId) ?? 0;
+
+      if (now - lastSave >= LOCATION_SAVE_INTERVAL_MS) {
+        provider.currentLocation = payload.location;
+        await provider.save();
+        lastProviderLocationSave.set(data.user.providerId, now);
+      }
     }
   }
 }
